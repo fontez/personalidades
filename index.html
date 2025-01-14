@@ -126,10 +126,13 @@
             font-size: 1.5rem;
             color: #86868b;
         }
-        #loading {
-            text-align: center;
+        .pagination span {
+            min-width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #86868b;
-            padding: 1rem;
         }
     </style>
     </style>
@@ -192,12 +195,46 @@
             }
         }
 
-        function displayData(data) {
-            if (!data || !data.list) {
-                console.error('Formato inválido de dados:', data);
-                document.getElementById('loading').textContent = 'Erro: formato de dados inválido';
-                return;
+        let allData = [];
+
+        async function fetchAllData() {
+            const pageSize = 100;
+            let page = 1;
+            let allItems = [];
+            
+            while (true) {
+                const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows?limit=${pageSize}&offset=${(page-1) * pageSize}`;
+                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
+                
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                allItems = allItems.concat(data.list);
+                
+                if (data.list.length < pageSize || !data.list.length) {
+                    break;
+                }
+                page++;
             }
+            
+            return allItems;
+        }
+
+        function displayFilteredData(searchTerm = '') {
+            const filtered = allData.filter(item => 
+                Object.values(item).some(value => 
+                    String(value).toLowerCase().includes(searchTerm.toLowerCase())
+                )
+            );
+            
+            displayData({
+                list: filtered.slice(0, 20),
+                pageInfo: {
+                    page: 1,
+                    totalRows: filtered.length
+                }
+            }, filtered);
+        }
             
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = data.list.map(item => {
@@ -253,15 +290,25 @@
             
             let buttons = [];
             
-            // Primeira página
+            // Sempre mostra primeira página
             buttons.push(`<button onclick="loadPage(1)" ${currentPage === 1 ? 'class="active"' : ''}>1</button>`);
             
-            // Páginas intermediárias
-            for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
-                buttons.push(`<button onclick="loadPage(${i})" ${currentPage === i ? 'class="active"' : ''}>${i}</button>`);
+            if (currentPage > 4) {
+                buttons.push('<span>...</span>');
             }
             
-            // Última página
+            // Páginas ao redor da atual
+            for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
+                if (i <= currentPage + 2 && i >= currentPage - 2) {
+                    buttons.push(`<button onclick="loadPage(${i})" ${currentPage === i ? 'class="active"' : ''}>${i}</button>`);
+                }
+            }
+            
+            if (currentPage < totalPages - 3) {
+                buttons.push('<span>...</span>');
+            }
+            
+            // Sempre mostra última página
             if (totalPages > 1) {
                 buttons.push(`<button onclick="loadPage(${totalPages})" ${currentPage === totalPages ? 'class="active"' : ''}>${totalPages}</button>`);
             }
