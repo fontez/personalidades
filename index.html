@@ -29,6 +29,7 @@
                     <th>Orago</th>
                     <th>Arciprestado</th>
                     <th>Diocese</th>
+                    <th>Horários</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
@@ -39,6 +40,11 @@
     </div>
 
     <script>
+        function showSchedule(button) {
+            const horarios = button.getAttribute('data-horarios');
+            alert(horarios);
+        }
+
         async function fetchData() {
             const apiUrl = 'https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows';
             const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
@@ -76,8 +82,9 @@
                 <tr>
                     <td>${item.Paroquia || ''}</td>
                     <td>${item.Orago || ''}</td>
-                    <td>${item.Arciprestado || ''}</td>
+                    <td>${item['Arciprestado Ouvidoria'] || ''}</td>
                     <td>${item.Diocese || ''}</td>
+                    <td>${item.Horarios ? '<button onclick="showSchedule(this)" data-horarios="'+item.Horarios+'">Ver horários</button>' : ''}</td>
                 </tr>
             `).join('');
             
