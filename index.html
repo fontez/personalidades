@@ -9,6 +9,38 @@
         body { padding: 2rem; }
         .search { margin-bottom: 2rem; }
         table { width: 100%; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            margin: 10% auto;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        button.link {
+            background: none;
+            border: none;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+        }
+        button.link:hover {
+            color: darkblue;
+        }
     </style>
 </head>
 <body>
@@ -39,12 +71,16 @@
         <div id="loading">Carregando...</div>
     </div>
 
-    <script>
-        function showSchedule(button) {
-            const horarios = button.getAttribute('data-horarios');
-            alert(horarios);
-        }
+    <!-- Modal para horários -->
+    <div id="horarioModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Horários de Missa</h2>
+            <div id="horarioContent"></div>
+        </div>
+    </div>
 
+    <script>
         async function fetchData() {
             const apiUrl = 'https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows';
             const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
@@ -55,6 +91,7 @@
                     throw new Error('Erro ao carregar dados');
                 }
                 const data = await response.json();
+                console.log("Dados recebidos:", data); // Debug
                 return data;
             } catch (error) {
                 console.error('Erro:', error);
@@ -64,11 +101,7 @@
         }
 
         function displayData(items) {
-            console.log('Dados recebidos:', items); // Debug
-            
-            const tbody = document.getElementById('tableBody');
             if (!Array.isArray(items)) {
-                // Se não for array, verifica se tem list
                 if (items && items.list) {
                     items = items.list;
                 } else {
@@ -78,17 +111,30 @@
                 }
             }
             
-            tbody.innerHTML = items.map(item => `
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = items.map(item => {
+                console.log("Item sendo processado:", item); // Debug do item individual
+                return `
                 <tr>
                     <td>${item.Paroquia || ''}</td>
                     <td>${item.Orago || ''}</td>
-                    <td>${item['Arciprestado Ouvidoria'] || ''}</td>
+                    <td>${item['Arciprestado Ouvidoria'] || item.Arciprestado || ''}</td>
                     <td>${item.Diocese || ''}</td>
-                    <td>${item.Horarios ? '<button onclick="showSchedule(this)" data-horarios="'+item.Horarios+'">Ver horários</button>' : ''}</td>
+                    <td>${item.Horarios ? '<button class="link" onclick="showSchedule(this)" data-horarios="'+encodeURIComponent(item.Horarios)+'">Ver horários</button>' : ''}</td>
                 </tr>
-            `).join('');
+            `}).join('');
             
             document.getElementById('loading').style.display = 'none';
+        }
+
+        function showSchedule(button) {
+            const horarios = decodeURIComponent(button.getAttribute('data-horarios'));
+            document.getElementById('horarioContent').textContent = horarios;
+            document.getElementById('horarioModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('horarioModal').style.display = 'none';
         }
 
         function setupSearch() {
@@ -102,6 +148,14 @@
                     row.style.display = text.includes(term) ? '' : 'none';
                 });
             });
+        }
+
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('horarioModal');
+            if (event.target == modal) {
+                closeModal();
+            }
         }
 
         // Inicialização
