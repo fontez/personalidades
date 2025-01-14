@@ -58,7 +58,20 @@
         }
 
         function displayData(items) {
+            console.log('Dados recebidos:', items); // Debug
+            
             const tbody = document.getElementById('tableBody');
+            if (!Array.isArray(items)) {
+                // Se não for array, verifica se tem list
+                if (items && items.list) {
+                    items = items.list;
+                } else {
+                    console.error('Formato inválido de dados:', items);
+                    document.getElementById('loading').textContent = 'Erro: formato de dados inválido';
+                    return;
+                }
+            }
+            
             tbody.innerHTML = items.map(item => `
                 <tr>
                     <td>${item.Paroquia || ''}</td>
