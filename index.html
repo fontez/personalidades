@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diretório de Paróquias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Diretório de Paróquias</h1>
+        
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Pesquisar..." 
+            class="w-full p-2 border rounded mb-4"
+        >
+
+        <table class="min-w-full bg-white shadow-md rounded">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-2 text-left">Paróquia</th>
+                    <th class="px-4 py-2 text-left">Orago</th>
+                    <th class="px-4 py-2 text-left">Arciprestado</th>
+                    <th class="px-4 py-2 text-left">Diocese</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+
+        <div id="loading" class="text-center p-4">Carregando...</div>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const baseUrl = 'https://nocodb.pfontez.work';
+            const viewId = 'vwahuj40bsx4vyqq';
+            const tableId = 'mktvik3e11yufuj';
+            const token = 'B0IcoK0fZq2GGaD4PniILZmXhrnt7MrSIcAiy6EO';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v2/tables/${tableId}/records?viewId=${viewId}`, {
+                    headers: {
+                        'xc-token': token
+                    }
+                });
+
+                const data = await response.json();
+                return data.list || [];
+            } catch (error) {
+                console.error('Erro:', error);
+                return [];
+            }
+        }
+
+        function displayData(items) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = items.map(item => `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-2">${item.Paroquia || ''}</td>
+                    <td class="px-4 py-2">${item.Orago || ''}</td>
+                    <td class="px-4 py-2">${item.Arciprestado || ''}</td>
+                    <td class="px-4 py-2">${item.Diocese || ''}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function setupSearch() {
+            const input = document.getElementById('searchInput');
+            input.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#tableBody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupSearch();
+            const data = await fetchData();
+            displayData(data);
+        });
+    </script>
+</body>
+</html>
