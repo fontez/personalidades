@@ -38,8 +38,27 @@
             cursor: pointer;
             padding: 0;
         }
-        button.link:hover {
-            color: darkblue;
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            min-width: 40px;
+        }
+        .pagination button.active {
+            background: #1095c1;
+            color: white;
+            border-color: #1095c1;
+        }
+        .pagination button:hover:not(.active) {
+            background: #f0f0f0;
         }
     </style>
 </head>
@@ -68,6 +87,7 @@
             </tbody>
         </table>
 
+        <div class="pagination" id="pagination"></div>
         <div id="loading">Carregando...</div>
     </div>
 
@@ -81,8 +101,9 @@
     </div>
 
     <script>
-        async function fetchData() {
-            const apiUrl = 'https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows';
+        async function fetchData(page = 1) {
+            const pageSize = 20;
+            const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows?limit=${pageSize}&offset=${(page-1) * pageSize}`;
             const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
 
             try {
@@ -91,40 +112,35 @@
                     throw new Error('Erro ao carregar dados');
                 }
                 const data = await response.json();
-                console.log("Dados recebidos:", data); // Debug
                 return data;
             } catch (error) {
                 console.error('Erro:', error);
                 document.getElementById('loading').textContent = 'Erro ao carregar dados: ' + error.message;
-                return [];
+                return { list: [], pageInfo: {} };
             }
         }
 
-        function displayData(items) {
-            if (!Array.isArray(items)) {
-                if (items && items.list) {
-                    items = items.list;
-                } else {
-                    console.error('Formato inválido de dados:', items);
-                    document.getElementById('loading').textContent = 'Erro: formato de dados inválido';
-                    return;
-                }
+        function displayData(data) {
+            if (!data || !data.list) {
+                console.error('Formato inválido de dados:', data);
+                document.getElementById('loading').textContent = 'Erro: formato de dados inválido';
+                return;
             }
             
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = items.map(item => {
-                console.log("Item sendo processado:", item); // Debug do item individual
+            tbody.innerHTML = data.list.map(item => {
                 return `
                 <tr>
                     <td>${item.Paroquia || ''}</td>
                     <td>${item.Orago || ''}</td>
-                    <td>${item['Arciprestado Ouvidoria'] || item.Arciprestado || ''}</td>
+                    <td>${item['Arciprestado Ouvidoria e Vigararia'] || ''}</td>
                     <td>${item.Diocese || ''}</td>
                     <td>${item.Horarios ? '<button class="link" onclick="showSchedule(this)" data-horarios="'+encodeURIComponent(item.Horarios)+'">Ver horários</button>' : ''}</td>
                 </tr>
             `}).join('');
             
             document.getElementById('loading').style.display = 'none';
+            renderPagination(data.pageInfo);
         }
 
         function showSchedule(button) {
@@ -158,11 +174,39 @@
             }
         }
 
+        function renderPagination(pageInfo) {
+            const totalPages = Math.ceil(pageInfo.totalRows / 20);
+            const currentPage = pageInfo.page;
+            const pagination = document.getElementById('pagination');
+            
+            let buttons = [];
+            
+            // Primeira página
+            buttons.push(`<button onclick="loadPage(1)" ${currentPage === 1 ? 'class="active"' : ''}>1</button>`);
+            
+            // Páginas intermediárias
+            for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
+                buttons.push(`<button onclick="loadPage(${i})" ${currentPage === i ? 'class="active"' : ''}>${i}</button>`);
+            }
+            
+            // Última página
+            if (totalPages > 1) {
+                buttons.push(`<button onclick="loadPage(${totalPages})" ${currentPage === totalPages ? 'class="active"' : ''}>${totalPages}</button>`);
+            }
+            
+            pagination.innerHTML = buttons.join('');
+        }
+        
+        async function loadPage(page) {
+            document.getElementById('loading').style.display = 'block';
+            const data = await fetchData(page);
+            displayData(data);
+        }
+
         // Inicialização
         document.addEventListener('DOMContentLoaded', async () => {
             setupSearch();
-            const data = await fetchData();
-            displayData(data);
+            await loadPage(1);
         });
     </script>
 </body>
