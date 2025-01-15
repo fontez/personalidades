@@ -96,11 +96,55 @@
             color: #86868b;
             padding: 0 0.5rem;
         }
-        #loading {
-            text-align: center;
-            padding: 2rem;
-            color: #86868b;
-            font-size: 0.9rem;
+        .horario-cell {
+            cursor: pointer;
+        }
+        .horario-cell:hover {
+            background: #f0f0f2;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem;
+            background: #0071e3;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .edit-horario {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+        }
+        .edit-horario input {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+        }
+        .edit-horario button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -122,6 +166,7 @@
                     <th>Orago</th>
                     <th>Arciprestado</th>
                     <th>Diocese</th>
+                    <th>Horários</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
@@ -130,6 +175,10 @@
 
         <div id="pagination" class="pagination"></div>
         <div id="loading">Carregando dados...</div>
+    <div id="notification" class="notification"></div>
+    <div id="editHorario" class="edit-horario">
+        <input type="text" id="horarioInput" placeholder="Digite o novo horário">
+        <button onclick="saveHorario()">Salvar</button>
     </div>
 
     <script>
@@ -159,6 +208,9 @@
                     <td>${item.Orago || ''}</td>
                     <td>${item['Arciprestado Ouvidoria e Vigararia'] || ''}</td>
                     <td>${item.Diocese || ''}</td>
+                    <td class="horario-cell" onclick="editHorario(this)" data-paroquia="${item.Paroquia}">
+                        ${item.Horarios || 'Clique para adicionar'}
+                    </td>
                 </tr>
             `).join('');
 
@@ -227,11 +279,44 @@
             });
         }
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            setupSearch();
-            loadPage(1);
-        });
+        let currentEditingCell = null;
+
+        function editHorario(cell) {
+            currentEditingCell = cell;
+            const horario = cell.textContent.trim();
+            const input = document.getElementById('horarioInput');
+            input.value = horario === 'Clique para adicionar' ? '' : horario;
+            
+            document.getElementById('editHorario').style.display = 'block';
+            input.focus();
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        async function saveHorario() {
+            if (!currentEditingCell) return;
+            
+            const newHorario = document.getElementById('horarioInput').value;
+            const paroquia = currentEditingCell.dataset.paroquia;
+            const oldHorario = currentEditingCell.textContent.trim();
+            
+            // Aqui você implementaria a chamada à API para salvar
+            // Por enquanto, só atualizamos a interface
+            currentEditingCell.textContent = newHorario || 'Clique para adicionar';
+            document.getElementById('editHorario').style.display = 'none';
+            
+            showNotification(`Paróquia ${paroquia} mudou horário de "${oldHorario}" para "${newHorario}"`);
+            
+            // Aqui você pode adicionar a lógica do websocket para tempo real
+        }
     </script>
 </body>
 </html>
