@@ -247,28 +247,29 @@
 
         async function saveHorario(id, horario) {
             try {
-                // Usando a mesma API v1 que funciona para listar
-                const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b`;
+                const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/records/${id}`;
                 const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
                 
+                console.log('Tentando salvar:', {id, horario, url: proxyUrl});
+                
                 const response = await fetch(proxyUrl, {
-                    method: 'PUT',
+                    method: 'PATCH',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'xc-shared-view-password': ''
                     },
                     body: JSON.stringify({
-                        Id: id,
                         Horarios: horario
                     })
                 });
 
                 console.log('Resposta:', response);
                 const data = await response.text();
-                console.log('Dados:', data);
+                console.log('Dados da resposta:', data);
 
                 return response.ok;
             } catch (error) {
-                console.error('Erro ao salvar:', error);
+                console.error('Erro completo:', error);
                 return false;
             }
         }
