@@ -5,48 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diretório de Paróquias</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
+    <style type="text/css">
         body { 
             padding: 2rem; 
             background-color: #f5f5f7;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        .horario-cell {
-            cursor: pointer;
-            position: relative;
         }
-        .horario-cell:hover {
-            background-color: #f0f0f2 !important;
-        }
-        .horario-cell.editing {
-            padding: 0;
-        }
-        .horario-input {
-            width: 100%;
-            height: 100%;
-            padding: 1rem;
-            border: 2px solid #0071e3;
-            border-radius: 6px;
-            font-size: inherit;
-            font-family: inherit;
-        }
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #0071e3;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-            display: none;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-        </style>
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -134,53 +98,45 @@
         }
         .horario-cell {
             cursor: pointer;
+            position: relative;
         }
         .horario-cell:hover {
-            background: #f0f0f2;
+            background-color: #f0f0f2 !important;
+        }
+        .horario-cell.editing {
+            padding: 0;
+        }
+        .horario-input {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            border: 2px solid #0071e3;
+            border-radius: 6px;
+            font-size: inherit;
+            font-family: inherit;
         }
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 1rem;
             background: #0071e3;
             color: white;
+            padding: 1rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            display: none;
             z-index: 1000;
             animation: slideIn 0.3s ease-out;
+            display: none;
         }
         @keyframes slideIn {
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
-        .edit-horario {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 1rem;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            display: none;
-            z-index: 1000;
-        }
-        .edit-horario input {
-            width: 100%;
-            padding: 0.8rem;
-            margin-bottom: 1rem;
-            border: 1px solid #e5e5e7;
-            border-radius: 8px;
-        }
-        .edit-horario button {
-            width: 100%;
-            padding: 0.8rem;
-            background: #0071e3;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
+        #loading {
+            text-align: center;
+            padding: 2rem;
+            color: #86868b;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -204,7 +160,6 @@
                     <th>Arciprestado</th>
                     <th>Diocese</th>
                     <th>Horários</th>
-                    <th>Horários</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
@@ -213,10 +168,6 @@
 
         <div id="pagination" class="pagination"></div>
         <div id="loading">Carregando dados...</div>
-    <div id="notification" class="notification"></div>
-    <div id="editHorario" class="edit-horario">
-        <input type="text" id="horarioInput" placeholder="Digite o novo horário">
-        <button onclick="saveHorario()">Salvar</button>
     </div>
 
     <script>
@@ -225,35 +176,15 @@
 
         async function fetchData(offset = 0) {
             try {
-                console.log('Iniciando busca de dados...');
-                const url = 'https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows';
+                const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows?limit=${ITEMS_PER_PAGE}&offset=${offset}`;
+                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
                 
-                const response = await fetch(url, {
-                    mode: 'cors',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                console.log('Resposta recebida:', response);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Erro na resposta da API');
                 
-                const data = await response.json();
-                console.log('Dados processados:', data);
-                
-                return {
-                    list: data,
-                    pageInfo: {
-                        totalRows: data.length,
-                        page: Math.floor(offset / ITEMS_PER_PAGE) + 1
-                    }
-                };
+                return await response.json();
             } catch (error) {
-                console.error('Erro detalhado:', error);
-                document.getElementById('loading').textContent = 'Erro ao carregar dados: ' + error.message;
+                console.error('Erro ao buscar dados:', error);
                 return null;
             }
         }
@@ -267,9 +198,6 @@
                     <td>${item['Arciprestado Ouvidoria e Vigararia'] || ''}</td>
                     <td>${item.Diocese || ''}</td>
                     <td class="horario-cell" onclick="editHorario(this)" data-paroquia="${item.Paroquia}">${item.Horarios || 'Clique para adicionar'}</td>
-                    <td class="horario-cell" onclick="editHorario(this)" data-paroquia="${item.Paroquia}">
-                        ${item.Horarios || 'Clique para adicionar'}
-                    </td>
                 </tr>
             `).join('');
 
@@ -338,18 +266,42 @@
             });
         }
 
-        let currentEditingCell = null;
-
         function editHorario(cell) {
-            currentEditingCell = cell;
-            const horario = cell.textContent.trim();
-            const input = document.getElementById('horarioInput');
-            input.value = horario === 'Clique para adicionar' ? '' : horario;
+            if (cell.classList.contains('editing')) return;
             
-            document.getElementById('editHorario').style.display = 'block';
+            const currentText = cell.textContent;
+            const paroquia = cell.dataset.paroquia;
+            
+            cell.classList.add('editing');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'horario-input';
+            input.value = currentText === 'Clique para adicionar' ? '' : currentText;
+            
+            cell.textContent = '';
+            cell.appendChild(input);
             input.focus();
+            
+            input.addEventListener('blur', finishEdit);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    finishEdit();
+                }
+            });
+            
+            function finishEdit() {
+                const newHorario = input.value.trim();
+                const oldHorario = currentText;
+                
+                cell.classList.remove('editing');
+                cell.textContent = newHorario || 'Clique para adicionar';
+                
+                if (newHorario !== oldHorario) {
+                    showNotification(`Paróquia ${paroquia}: horário alterado de "${oldHorario}" para "${newHorario}"`);
+                }
+            }
         }
-
+        
         function showNotification(message) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -360,22 +312,11 @@
             }, 3000);
         }
 
-        async function saveHorario() {
-            if (!currentEditingCell) return;
-            
-            const newHorario = document.getElementById('horarioInput').value;
-            const paroquia = currentEditingCell.dataset.paroquia;
-            const oldHorario = currentEditingCell.textContent.trim();
-            
-            // Aqui você implementaria a chamada à API para salvar
-            // Por enquanto, só atualizamos a interface
-            currentEditingCell.textContent = newHorario || 'Clique para adicionar';
-            document.getElementById('editHorario').style.display = 'none';
-            
-            showNotification(`Paróquia ${paroquia} mudou horário de "${oldHorario}" para "${newHorario}"`);
-            
-            // Aqui você pode adicionar a lógica do websocket para tempo real
-        }
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSearch();
+            loadPage(1);
+        });
     </script>
 </body>
 </html>
