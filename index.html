@@ -186,16 +186,25 @@
         const ITEMS_PER_PAGE = 20;
 
         async function fetchData(offset = 0) {
+            const API_URL = 'https://nocodb.pfontez.work/api/v2/tables/mktvik3e11yufuj/records';
+            const params = `?offset=${offset}&limit=${ITEMS_PER_PAGE}&where=&viewId=vwahuj40bsx4vyqq`;
+            
             try {
-                const apiUrl = `https://nocodb.pfontez.work/api/v1/db/public/shared-view/11b9a87c-1d98-46f0-95b8-e654d556ad3b/rows?limit=${ITEMS_PER_PAGE}&offset=${offset}`;
-                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(apiUrl);
-                
-                const response = await fetch(proxyUrl);
+                const response = await fetch(API_URL + params, {
+                    headers: {
+                        'xc-token': 'B0IcoK0fZq2GGaD4PniILZmXhrnt7MrSIcAiy6EO'
+                    }
+                });
+
                 if (!response.ok) throw new Error('Erro na resposta da API');
                 
-                return await response.json();
+                const data = await response.json();
+                console.log('Dados recebidos:', data); // Debug
+                return data;
+                
             } catch (error) {
                 console.error('Erro ao buscar dados:', error);
+                document.getElementById('loading').textContent = 'Erro ao carregar dados: ' + error.message;
                 return null;
             }
         }
