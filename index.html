@@ -87,19 +87,25 @@
             cursor: pointer;
             position: relative;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .horario-cell:after {
-            content: '✎';
-            position: absolute;
-            right: 10px;
+        .edit-icon {
+            font-size: 14px;
             color: #0071e3;
             opacity: 0;
             transition: opacity 0.2s ease;
+            margin-left: 8px;
+        }
+        .placeholder {
+            color: #86868b;
+            font-size: 14px;
         }
         .horario-cell:hover {
             background-color: #f0f6ff !important;
         }
-        .horario-cell:hover:after {
+        .horario-cell:hover .edit-icon {
             opacity: 1;
         }
         .horario-cell.editing {
@@ -188,7 +194,9 @@
                     <td>${item.Orago || ''}</td>
                     <td>${item['Arciprestado Ouvidoria e Vigararia'] || ''}</td>
                     <td>${item.Diocese || ''}</td>
-                    <td class="horario-cell" onclick="editHorario(this)" data-id="${item.Id}">${item.Horarios || 'Clique para adicionar'}</td>
+                    <td class="horario-cell" onclick="editHorario(this)" data-id="${item.Id}">
+                        ${item.Horarios ? `<span>${item.Horarios}</span> <i class="edit-icon">✎</i>` : '<span class="placeholder">+ Adicionar</span>'}
+                    </td>
                 </tr>
             `).join('');
 
